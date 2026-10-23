@@ -1,62 +1,64 @@
-# VRD Power Energies — production starter
+# VRD Power Energies
 
-This package contains a static Vercel frontend and a Node/Express API intended for Render (or another Node host), with MongoDB Atlas storage, protected admin dashboard, rate limiting and optional SMTP email notifications.
+Modern React + Vite website and admin portal for VRD Power Energies, Kannauj, Uttar Pradesh, India.
 
-## Company details configured
-- Brand: VRD Power Energies
-- WhatsApp: +91 99561 91939 (wa.me link uses 919956191939)
+## Included
+- `client/`: public product catalogue, product enquiry/quotation form, contact links and responsive layout.
+- `admin/`: separate React admin dashboard for reviewing enquiries and updating statuses.
+- `server/`: Express API, MongoDB/Mongoose models, validation, authentication, rate limiting and optional SMTP notification.
+- `docs/`: deployment and API guidance.
+
+## Confirmed business details
+- Business name: VRD Power Energies
 - Location: Kannauj, Uttar Pradesh, India
-- Email: intentionally left as `YOUR_BUSINESS_EMAIL` / environment placeholders until the real address is provided.
+- WhatsApp: +91 9956191939 (`https://wa.me/919956191939`)
+- Product categories: EV batteries and energy-storage batteries
+- Audience: B2B and retail
+- Stage: startup
 
-## Architecture
-- Frontend: Vercel static hosting
-- API/admin dashboard: Node.js service at `/admin`
-- Database: MongoDB Atlas
-- Email: SMTP provider configured through environment variables
+No business email, certifications, manufacturing capacity, battery specifications, prices, warranties, or other credentials have been invented. Product specifications are intentionally marked “Contact for specifications” until confirmed.
+
+## Requirements
+Node.js 20+ and MongoDB (local or Atlas).
 
 ## Local setup
-1. Install Node.js 20 or later.
-2. Create a MongoDB Atlas database and allow the API host's outbound access per Atlas instructions.
-3. In `server`, run `npm install`.
-4. Copy `.env.example` to `.env` and fill in real credentials. Never commit `.env`.
-5. Generate a password hash with `node src/hash-password.js "your-long-unique-password"` and place the output in `ADMIN_PASSWORD_HASH`.
-6. Set `FRONTEND_ORIGINS` to the exact local/Vercel origin. `config.js` must point to the API origin when frontend and API are hosted separately.
-7. Start locally: `npm run dev`.
-8. Admin: `http://localhost:5000/admin`; health: `http://localhost:5000/api/health`.
+1. Copy `server/.env.example` to `server/.env` and set secrets.
+2. Install dependencies:
+   ```bash
+   npm install
+   npm run install:all
+   ```
+3. Start API:
+   ```bash
+   npm run dev:server
+   ```
+4. In another terminal start public site:
+   ```bash
+   npm run dev:client
+   ```
+5. Start admin in another terminal:
+   ```bash
+   npm run dev:admin
+   ```
 
-## Deploy the API (Render example)
-- Create a new Web Service from the repository's `server` directory (or set root directory to `server`).
-- Runtime: Node.
-- Build command: `npm install`
-- Start command: `npm start`
-- Add environment variables from `.env.example` in the Render dashboard.
-- Set `NODE_ENV=production`, `MONGODB_URI`, `JWT_SECRET` (32+ random chars), `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `FRONTEND_ORIGINS`, and SMTP settings once available.
-- Do not add `.env` to Git. Use provider environment settings.
-- Once deployed, test `https://YOUR-API-HOST/api/health` and `https://YOUR-API-HOST/admin`.
+Public site: Vite's local URL (typically `http://localhost:5173`).
+Admin: Vite's local URL (typically `http://localhost:5174/admin`).
+API: `http://localhost:5000`.
 
-## Deploy the frontend (Vercel)
-- Import the repository into Vercel.
-- Framework preset: Other.
-- Root directory: repository root.
-- Build command: leave empty / no build.
-- Output directory: `.`.
-- Update `config.js` `API_BASE_URL` to the deployed API origin, e.g. `https://your-api-host.onrender.com`. Commit and redeploy.
-- Add the final Vercel origin to the API's `FRONTEND_ORIGINS`, then redeploy/restart the API.
+## Admin account
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the server environment. The server hashes the configured password using bcrypt at login. Use a long, unique production password. JWTs are stored in an HttpOnly cookie.
 
-## Email
-A real business inbox is not yet provided, so email notifications are not active until `NOTIFY_EMAIL`, `FROM_EMAIL`, and valid SMTP host/user/password are configured. The database save occurs independently of email delivery. Use an email provider that permits transactional SMTP and verify sender-domain authentication (SPF/DKIM/DMARC) before production.
+## Production deployment
+- API: deploy `server/` to Render or another Node host. Build command `npm install`, start command `npm start`.
+- Public site: deploy `client/` to Vercel, root directory `client`, build `npm run build`, output `dist`.
+- Admin: deploy `admin/` to Vercel, root directory `admin`, build `npm run build`, output `dist`.
+- Set `VITE_API_URL` to the deployed API origin in both Vercel projects.
+- Set server environment variables from `server/.env.example`. Set `FRONTEND_ORIGINS` to the exact deployed public/admin origins, comma-separated.
+- Set `MONGODB_URI`, a strong `JWT_SECRET` (32+ random characters), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and SMTP variables if email notifications are required.
+- Enable HTTPS on all production origins. Never commit `.env` files.
 
-## Admin dashboard and security
-- Admin dashboard is served by the API at `/admin`, not publicly accessible without login for enquiry data.
-- Passwords are compared against a bcrypt hash; JWT is stored in an HTTP-only cookie.
-- Set a long, random JWT secret and strong unique admin password.
-- Use only HTTPS in production.
-- Restrict database access, keep backups enabled, and never commit secrets.
-- Review enquiry data handling and publish a privacy notice/consent message before collecting personal data.
-- This starter has basic validation and rate limiting. Before broad launch, consider CAPTCHA/bot protection, monitoring, scheduled backups and a documented retention policy.
-- For a separate Vercel frontend and API, cross-site cookies are avoided for admin because `/admin` lives on the API origin; customers submit public enquiries cross-origin with CORS. Test the enquiry form from the deployed frontend.
-
-## Not included
-- No live deployment was performed from this package.
-- No credentials, database, email inbox, domain or Vercel project have been provisioned.
-- No battery certification/specifications are asserted. Publish only validated product claims.
+## Before going live
+- Confirm product models/specifications, photos, prices and warranty terms.
+- Configure a real business email if email notifications should be sent.
+- Test quotation submission, admin login, status updates, rate limits and production CORS.
+- Set up MongoDB backups and review privacy/retention requirements.
