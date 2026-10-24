@@ -3,7 +3,7 @@ dotenv.config();
 
 const nodeEnv = process.env.NODE_ENV || 'development';
 function normalizeOrigin(value) {
-  const raw = value.trim().replace(/\\/+$/, '');
+  const raw = value.trim();
   if (!raw) return '';
   try {
     return new URL(raw.includes('://') ? raw : `https://${raw}`).origin;
