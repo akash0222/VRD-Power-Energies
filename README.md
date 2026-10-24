@@ -46,7 +46,7 @@ Admin: Vite's local URL (typically `http://localhost:5174/admin`).
 API: `http://localhost:5000`.
 
 ## Admin account
-Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the server environment. The server hashes the configured password using bcrypt at login. Use a long, unique production password. JWTs are stored in an HttpOnly cookie.
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the server environment. The server hashes the configured password using bcrypt once at startup and compares login attempts against that hash. Use a long, unique production password. JWTs are stored in an HttpOnly cookie.
 
 ## Production deployment
 - API: deploy `server/` to Render or another Node host. Build command `npm install`, start command `npm start`.
@@ -55,7 +55,7 @@ Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the server environment. The server has
 - Set `VITE_API_URL` to the deployed API origin in both Vercel projects.
 - Set server environment variables from `server/.env.example`. Set `FRONTEND_ORIGINS` to the exact deployed public/admin origins, comma-separated.
 - Set `MONGODB_URI`, a strong `JWT_SECRET` (32+ random characters), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and SMTP variables if email notifications are required.
-- Enable HTTPS on all production origins. Never commit `.env` files.
+- Enable HTTPS on all production origins. Set `COOKIE_SECURE=true` in production; this enables secure cross-site cookies (`SameSite=None`) for separate Vercel and Render origins. Never commit `.env` files.
 
 ## Before going live
 - Confirm product models/specifications, photos, prices and warranty terms.
