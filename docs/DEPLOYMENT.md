@@ -7,7 +7,7 @@
 - Start command: `npm start`
 - Add environment variables from `server/.env.example`.
 - Use a MongoDB Atlas connection string.
-- Set `NODE_ENV=production`, `COOKIE_SECURE=true`, a random `JWT_SECRET` of at least 32 characters, strong admin credentials, and exact frontend origins. With `COOKIE_SECURE=true`, the admin session cookie uses `Secure` and `SameSite=None` so the browser can send it from a separate Vercel admin origin to the Render API.
+- Set `NODE_ENV=production`, a random `JWT_SECRET` of at least 32 characters, strong admin credentials, and `FRONTEND_ORIGINS` to the exact deployed frontend origins separated by commas. The API normalizes host-only entries to HTTPS origins. Production automatically enables secure session cookies (`Secure`, `SameSite=None`) for separate Vercel and Render sites; `COOKIE_SECURE=true` is still recommended explicitly.
 - Configure SMTP only after a verified sender account and notification email are available.
 
 ## Public website on Vercel
