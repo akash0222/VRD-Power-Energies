@@ -174,7 +174,6 @@ export default function App() {
         <label>Email<input type="email" required value={email} onChange={event => setEmail(event.target.value)} autoComplete="username" /></label>
         <label>Password<input type="password" required value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" /></label>
         {error && <div className="error" role="alert">{error}</div>}
-      {counts.overdue > 0 && <div className="overdue-alert"><Clock3 size={17}/><span><b>{counts.overdue} overdue follow-up{counts.overdue === 1 ? '' : 's'}</b><small>Review the follow-up dates in the customer enquiry list.</small></span></div>}
         <button className="primary" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</button>
         <small>Credentials are configured on the API server.</small>
       </form>
@@ -197,6 +196,7 @@ export default function App() {
       </div>
 
       {error && <div className="error" role="alert">{error}</div>}
+      {counts.overdue > 0 && <div className="overdue-alert"><Clock3 size={17}/><span><b>{counts.overdue} overdue follow-up{counts.overdue === 1 ? '' : 's'}</b><small>Review the follow-up dates in the customer enquiry list.</small></span></div>}
 
       <div className="metric-grid">
         <button className={'metric-card metric-total ' + (status === 'all' ? 'selected' : '')} onClick={() => setStatus('all')}>
@@ -243,6 +243,16 @@ export default function App() {
                   <div className="notes-list">{(item.notes || []).length ? [...item.notes].reverse().map(note => <article key={note._id}><p>{note.text}</p><small>{note.createdBy || 'admin'} · {new Date(note.createdAt).toLocaleString()}</small></article>) : <p className="no-notes">No internal notes yet.</p>}</div>
                   <textarea value={noteDrafts[item._id] || ''} maxLength={2000} placeholder="Add a private note about this customer interaction…" onChange={event => setNoteDrafts(current => ({ ...current, [item._id]: event.target.value }))}/>
                   <button className="primary small-primary" disabled={savingId === item._id || !(noteDrafts[item._id] || '').trim()} onClick={() => addNote(item._id)}><Save size={14}/> Add note</button>
+                  <div className="communication-tools">
+                    <h3><Phone size={16}/> Contact customer</h3>
+                    <a className="contact-link whatsapp-link" href={"https://wa.me/" + item.phone.replace(/\D/g, '') + "?text=" + encodeURIComponent("Hello " + item.name + ", thank you for contacting VRD Power Energies. We are following up on your " + item.category + " enquiry.")} target="_blank" rel="noreferrer" onClick={() => logInteraction(item._id, { channel: 'whatsapp', outcome: 'opened', message: 'Opened WhatsApp conversation' })}><ExternalLink size={14}/> Open WhatsApp</a>
+                    {item.email ? <div className="email-composer"><h3><Mail size={16}/> Send email to {item.email}</h3>
+                      <input aria-label="Email subject" maxLength={180} placeholder="Subject" value={emailDrafts[item._id]?.subject || ''} onChange={event => setEmailDrafts(current => ({ ...current, [item._id]: { ...current[item._id], subject: event.target.value } }))}/>
+                      <textarea aria-label="Email message" maxLength={5000} placeholder="Write a customer response…" value={emailDrafts[item._id]?.message || ''} onChange={event => setEmailDrafts(current => ({ ...current, [item._id]: { ...current[item._id], message: event.target.value } }))}/>
+                      <button className="primary small-primary" disabled={savingId === item._id || !(emailDrafts[item._id]?.subject || '').trim() || !(emailDrafts[item._id]?.message || '').trim()} onClick={() => sendCustomerEmail(item._id)}><Send size={14}/> Send email</button>
+                    </div> : <p className="no-notes">Customer did not provide an email address.</p>}
+                  </div>
+                  <div className="interaction-history"><h3>Communication history</h3>{(item.interactions || []).length ? [...item.interactions].reverse().map(entry => <article key={entry._id}><b>{entry.channel === 'whatsapp' ? 'WhatsApp' : 'Email'} · {entry.outcome}</b>{entry.subject && <p>{entry.subject}</p>}{entry.message && <p>{entry.message}</p>}<small>{entry.createdBy || 'admin'} · {new Date(entry.createdAt).toLocaleString()}</small></article>) : <p className="no-notes">No communication recorded yet.</p>}</div>
                 </section>
               </div>
             </td></tr>}
