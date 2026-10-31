@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import Enquiry from '../models/Enquiry.js';
 import { env } from '../config/env.js';
 import { requireAdmin } from '../middleware/auth.js';
+import { sendCustomerEmail } from '../services/notify.js';
 
 const router = Router();
 const configuredPasswordHash = env.adminPassword ? bcrypt.hash(env.adminPassword, 10) : null;
@@ -78,6 +79,49 @@ router.post('/enquiries/:id/notes', requireAdmin, async (req, res, next) => {
     if (!enquiry) return res.status(404).json({ message: 'Enquiry not found.' });
     res.status(201).json({ enquiry });
   } catch (error) { next(error); }
+});
+
+
+router.post('/enquiries/:id/interactions', requireAdmin, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: 'Invalid enquiry ID.' });
+    const { channel, outcome = 'opened', message = '', subject = '' } = req.body || {};
+    if (!['whatsapp', 'email'].includes(channel) || !['opened', 'sent', 'received', 'failed'].includes(outcome)) {
+      return res.status(400).json({ message: 'Invalid communication details.' });
+    }
+    if (typeof message !== 'string' || message.length > 5000 || typeof subject !== 'string' || subject.length > 180) {
+      return res.status(400).json({ message: 'Communication details are too long.' });
+    }
+    const enquiry = await Enquiry.findByIdAndUpdate(
+      req.params.id,
+      { $push: { interactions: { $each: [{ channel, outcome, message: message.trim(), subject: subject.trim(), createdBy: req.admin.email }], $slice: -200 } } },
+      { new: true, runValidators: true }
+    );
+    if (!enquiry) return res.status(404).json({ message: 'Enquiry not found.' });
+    res.status(201).json({ enquiry });
+  } catch (error) { next(error); }
+});
+
+router.post('/enquiries/:id/email', requireAdmin, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: 'Invalid enquiry ID.' });
+    const subject = typeof req.body?.subject === 'string' ? req.body.subject.trim() : '';
+    const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+    if (!subject || subject.length > 180 || !message || message.length > 5000) {
+      return res.status(400).json({ message: 'Subject and message are required (maximum 180 and 5,000 characters).' });
+    }
+    const enquiry = await Enquiry.findById(req.params.id);
+    if (!enquiry) return res.status(404).json({ message: 'Enquiry not found.' });
+    if (!enquiry.email) return res.status(400).json({ message: 'This enquiry does not have a customer email address.' });
+    await sendCustomerEmail({ to: enquiry.email, subject, message });
+    enquiry.interactions.push({ channel: 'email', outcome: 'sent', subject, message, createdBy: req.admin.email });
+    if (enquiry.interactions.length > 200) enquiry.interactions = enquiry.interactions.slice(-200);
+    await enquiry.save();
+    res.status(201).json({ enquiry, message: 'Email sent successfully.' });
+  } catch (error) {
+    if (error.status) return res.status(error.status).json({ message: error.message });
+    next(error);
+  }
 });
 
 export default router;
