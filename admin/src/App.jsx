@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   BatteryCharging, LogOut, RefreshCw, Search, ShieldCheck, Inbox,
-  Clock3, CheckCircle2, CircleDot, TrendingUp
+  Clock3, CheckCircle2, CircleDot, TrendingUp, MessageSquare, CalendarClock, Save
 } from 'lucide-react';
 
 const DEFAULT_API_URL = import.meta.env.PROD
@@ -37,6 +37,9 @@ export default function App() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [savingId, setSavingId] = useState('');
+  const [expandedId, setExpandedId] = useState('');
+  const [noteDrafts, setNoteDrafts] = useState({});
+  const [followUpDrafts, setFollowUpDrafts] = useState({});
 
   async function load() {
     setLoading(true);
@@ -82,6 +85,34 @@ export default function App() {
     } finally {
       setSavingId('');
     }
+  }
+
+  async function updateFollowUp(id, changes) {
+    setSavingId(id); setError('');
+    try {
+      const data = await request('/api/admin/enquiries/' + id, { method: 'PATCH', body: JSON.stringify(changes) });
+      setItems(current => current.map(item => item._id === id ? data.enquiry : item));
+    } catch (err) { setError(err.message); }
+    finally { setSavingId(''); }
+  }
+
+  async function addNote(id) {
+    const text = (noteDrafts[id] || '').trim();
+    if (!text) return;
+    setSavingId(id); setError('');
+    try {
+      const data = await request('/api/admin/enquiries/' + id + '/notes', { method: 'POST', body: JSON.stringify({ text }) });
+      setItems(current => current.map(item => item._id === id ? data.enquiry : item));
+      setNoteDrafts(current => ({ ...current, [id]: '' }));
+    } catch (err) { setError(err.message); }
+    finally { setSavingId(''); }
+  }
+
+  function toLocalDateTime(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    const offset = date.getTimezoneOffset();
+    return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
   }
 
   async function logout() {
@@ -165,7 +196,7 @@ export default function App() {
 
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Customer</th><th>Requirement</th><th>Details</th><th>Received</th><th>Status</th></tr></thead>
+          <thead><tr><th>Customer</th><th>Requirement</th><th>Details</th><th>Received</th><th>Status</th><th>Follow-up</th><th>Manage</th></tr></thead>
           <tbody>
             {visible.map(item => <tr key={item._id}>
               <td><b>{item.name}</b><small>{item.phone}</small><small>{item.email || 'No email provided'}</small>{item.company && <small>{item.company}</small>}</td>
@@ -173,8 +204,25 @@ export default function App() {
               <td className="message">{item.message}</td>
               <td>{new Date(item.createdAt).toLocaleString()}</td>
               <td><select aria-label={'Status for ' + item.name} className={'status ' + item.status} value={item.status} disabled={savingId === item._id} onChange={event => update(item._id, event.target.value)}><option value="new">New</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option></select></td>
-            </tr>)}
-            {!visible.length && <tr><td colSpan="5" className="empty">{loading ? 'Loading enquiries…' : search || status !== 'all' ? 'No enquiries match these filters.' : 'No enquiries received yet.'}</td></tr>}
+              <td><span className={'followup-pill ' + (item.followUpStatus || 'pending')}>{(item.followUpStatus || 'pending').replaceAll('_', ' ')}</span>{item.nextFollowUpAt && <small>{new Date(item.nextFollowUpAt).toLocaleString()}</small>}</td>
+              <td><button className="manage-btn" onClick={() => setExpandedId(expandedId === item._id ? '' : item._id)}>{expandedId === item._id ? 'Close' : 'Manage'}</button></td>
+            </tr>
+            {expandedId === item._id && <tr className="detail-row" key={item._id + '-details'}><td colSpan="7">
+              <div className="followup-panel">
+                <section><h3><CalendarClock size={16}/> Follow-up plan</h3>
+                  <label>Follow-up status<select value={followUpDrafts[item._id]?.status ?? item.followUpStatus ?? 'pending'} onChange={event => setFollowUpDrafts(current => ({ ...current, [item._id]: { ...current[item._id], status: event.target.value } }))}><option value="pending">Pending</option><option value="contacted">Contacted</option><option value="follow_up_required">Follow-up required</option><option value="completed">Completed</option></select></label>
+                  <label>Next follow-up date & time<input type="datetime-local" value={followUpDrafts[item._id]?.date ?? toLocalDateTime(item.nextFollowUpAt)} onChange={event => setFollowUpDrafts(current => ({ ...current, [item._id]: { ...current[item._id], date: event.target.value } }))}/></label>
+                  <button className="primary small-primary" disabled={savingId === item._id} onClick={() => updateFollowUp(item._id, { followUpStatus: followUpDrafts[item._id]?.status ?? item.followUpStatus ?? 'pending', nextFollowUpAt: followUpDrafts[item._id]?.date ?? toLocalDateTime(item.nextFollowUpAt) || null })}><Save size={14}/> Save follow-up</button>
+                </section>
+                <section><h3><MessageSquare size={16}/> Internal notes</h3>
+                  <div className="notes-list">{(item.notes || []).length ? [...item.notes].reverse().map(note => <article key={note._id}><p>{note.text}</p><small>{note.createdBy || 'admin'} · {new Date(note.createdAt).toLocaleString()}</small></article>) : <p className="no-notes">No internal notes yet.</p>}</div>
+                  <textarea value={noteDrafts[item._id] || ''} maxLength={2000} placeholder="Add a private note about this customer interaction…" onChange={event => setNoteDrafts(current => ({ ...current, [item._id]: event.target.value }))}/>
+                  <button className="primary small-primary" disabled={savingId === item._id || !(noteDrafts[item._id] || '').trim()} onClick={() => addNote(item._id)}><Save size={14}/> Add note</button>
+                </section>
+              </div>
+            </td></tr>}
+            )}
+            {!visible.length && <tr><td colSpan="7" className="empty">{loading ? 'Loading enquiries…' : search || status !== 'all' ? 'No enquiries match these filters.' : 'No enquiries received yet.'}</td></tr>}
           </tbody>
         </table>
       </div>
