@@ -115,6 +115,10 @@ export default function App() {
     return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
   }
 
+  function toUtcIso(value) {
+    return value ? new Date(value).toISOString() : null;
+  }
+
   async function logout() {
     try { await request('/api/admin/logout', { method: 'POST', body: '{}' }); } catch {}
     setAuth(false);
@@ -214,7 +218,7 @@ export default function App() {
                 <section><h3><CalendarClock size={16}/> Follow-up plan</h3>
                   <label>Follow-up status<select value={followUpDrafts[item._id]?.status ?? item.followUpStatus ?? 'pending'} onChange={event => setFollowUpDrafts(current => ({ ...current, [item._id]: { ...current[item._id], status: event.target.value } }))}><option value="pending">Pending</option><option value="contacted">Contacted</option><option value="follow_up_required">Follow-up required</option><option value="completed">Completed</option></select></label>
                   <label>Next follow-up date & time<input type="datetime-local" value={followUpDrafts[item._id]?.date ?? toLocalDateTime(item.nextFollowUpAt)} onChange={event => setFollowUpDrafts(current => ({ ...current, [item._id]: { ...current[item._id], date: event.target.value } }))}/></label>
-                  <button className="primary small-primary" disabled={savingId === item._id} onClick={() => updateFollowUp(item._id, { followUpStatus: followUpDrafts[item._id]?.status ?? item.followUpStatus ?? 'pending', nextFollowUpAt: (followUpDrafts[item._id]?.date ?? toLocalDateTime(item.nextFollowUpAt)) || null })}><Save size={14}/> Save follow-up</button>
+                  <button className="primary small-primary" disabled={savingId === item._id} onClick={() => updateFollowUp(item._id, { followUpStatus: followUpDrafts[item._id]?.status ?? item.followUpStatus ?? 'pending', nextFollowUpAt: toUtcIso(followUpDrafts[item._id]?.date ?? toLocalDateTime(item.nextFollowUpAt)) })}><Save size={14}/> Save follow-up</button>
                 </section>
                 <section><h3><MessageSquare size={16}/> Internal notes</h3>
                   <div className="notes-list">{(item.notes || []).length ? [...item.notes].reverse().map(note => <article key={note._id}><p>{note.text}</p><small>{note.createdBy || 'admin'} · {new Date(note.createdAt).toLocaleString()}</small></article>) : <p className="no-notes">No internal notes yet.</p>}</div>
