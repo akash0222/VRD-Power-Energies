@@ -9,6 +9,9 @@ import enquiryRoutes from './routes/enquiries.js';
 import adminRoutes from './routes/admin.js';
 
 const app = express();
+// Render runs the service behind one trusted reverse proxy. This lets Express
+// and express-rate-limit use the forwarded client IP safely.
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet());
 app.use(cors({
