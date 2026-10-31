@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   BatteryCharging, LogOut, RefreshCw, Search, ShieldCheck, Inbox,
   Clock3, CheckCircle2, CircleDot, TrendingUp, MessageSquare, CalendarClock, Save
@@ -198,7 +198,7 @@ export default function App() {
         <table>
           <thead><tr><th>Customer</th><th>Requirement</th><th>Details</th><th>Received</th><th>Status</th><th>Follow-up</th><th>Manage</th></tr></thead>
           <tbody>
-            {visible.map(item => <tr key={item._id}>
+            {visible.map(item => <Fragment key={item._id}><tr>
               <td><b>{item.name}</b><small>{item.phone}</small><small>{item.email || 'No email provided'}</small>{item.company && <small>{item.company}</small>}</td>
               <td>{item.category}<small>Quantity: {item.quantity || 'Not specified'}</small></td>
               <td className="message">{item.message}</td>
@@ -212,7 +212,7 @@ export default function App() {
                 <section><h3><CalendarClock size={16}/> Follow-up plan</h3>
                   <label>Follow-up status<select value={followUpDrafts[item._id]?.status ?? item.followUpStatus ?? 'pending'} onChange={event => setFollowUpDrafts(current => ({ ...current, [item._id]: { ...current[item._id], status: event.target.value } }))}><option value="pending">Pending</option><option value="contacted">Contacted</option><option value="follow_up_required">Follow-up required</option><option value="completed">Completed</option></select></label>
                   <label>Next follow-up date & time<input type="datetime-local" value={followUpDrafts[item._id]?.date ?? toLocalDateTime(item.nextFollowUpAt)} onChange={event => setFollowUpDrafts(current => ({ ...current, [item._id]: { ...current[item._id], date: event.target.value } }))}/></label>
-                  <button className="primary small-primary" disabled={savingId === item._id} onClick={() => updateFollowUp(item._id, { followUpStatus: followUpDrafts[item._id]?.status ?? item.followUpStatus ?? 'pending', nextFollowUpAt: followUpDrafts[item._id]?.date ?? toLocalDateTime(item.nextFollowUpAt) || null })}><Save size={14}/> Save follow-up</button>
+                  <button className="primary small-primary" disabled={savingId === item._id} onClick={() => updateFollowUp(item._id, { followUpStatus: followUpDrafts[item._id]?.status ?? item.followUpStatus ?? 'pending', nextFollowUpAt: (followUpDrafts[item._id]?.date ?? toLocalDateTime(item.nextFollowUpAt)) || null })}><Save size={14}/> Save follow-up</button>
                 </section>
                 <section><h3><MessageSquare size={16}/> Internal notes</h3>
                   <div className="notes-list">{(item.notes || []).length ? [...item.notes].reverse().map(note => <article key={note._id}><p>{note.text}</p><small>{note.createdBy || 'admin'} · {new Date(note.createdAt).toLocaleString()}</small></article>) : <p className="no-notes">No internal notes yet.</p>}</div>
@@ -221,7 +221,7 @@ export default function App() {
                 </section>
               </div>
             </td></tr>}
-            )}
+            </Fragment>)}
             {!visible.length && <tr><td colSpan="7" className="empty">{loading ? 'Loading enquiries…' : search || status !== 'all' ? 'No enquiries match these filters.' : 'No enquiries received yet.'}</td></tr>}
           </tbody>
         </table>
