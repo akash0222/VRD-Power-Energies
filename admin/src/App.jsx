@@ -127,7 +127,8 @@ export default function App() {
     total: items.length,
     fresh: items.filter(item => item.status === 'new').length,
     progress: items.filter(item => item.status === 'in_progress').length,
-    resolved: items.filter(item => item.status === 'resolved').length
+    resolved: items.filter(item => item.status === 'resolved').length,
+    overdue: items.filter(item => item.nextFollowUpAt && new Date(item.nextFollowUpAt) < new Date() && item.followUpStatus !== 'completed').length
   }), [items]);
 
   const visible = useMemo(() => {
@@ -150,6 +151,7 @@ export default function App() {
         <label>Email<input type="email" required value={email} onChange={event => setEmail(event.target.value)} autoComplete="username" /></label>
         <label>Password<input type="password" required value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" /></label>
         {error && <div className="error" role="alert">{error}</div>}
+      {counts.overdue > 0 && <div className="overdue-alert"><Clock3 size={17}/><span><b>{counts.overdue} overdue follow-up{counts.overdue === 1 ? '' : 's'}</b><small>Review the follow-up dates in the customer enquiry list.</small></span></div>}
         <button className="primary" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</button>
         <small>Credentials are configured on the API server.</small>
       </form>
