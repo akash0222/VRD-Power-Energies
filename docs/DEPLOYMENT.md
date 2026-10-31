@@ -26,3 +26,8 @@
 - Configure automated MongoDB backups and verify restore procedures.
 - Review logs, database access, cookie settings, CORS, and admin credentials before launch.
 - Test all flows after every deployment.
+
+
+### Vercel frontend API URL
+
+For the public `client` project and the separate `admin` project, set `VITE_API_URL` to `https://vrd-power-energies.onrender.com` in the Vercel project that owns each deployment, then redeploy. The public client also has this Render URL as its production default, so a missing Vercel variable will not send production enquiries to localhost. In Render, include both exact Vercel origins in `FRONTEND_ORIGINS` (comma-separated), for example `https://vrd-power-energies-htsz-seven.vercel.app,https://vrd-power-energies-mu.vercel.app`.
