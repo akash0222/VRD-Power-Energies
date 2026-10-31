@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   BatteryCharging, LogOut, RefreshCw, Search, ShieldCheck, Inbox,
-  Clock3, CheckCircle2, CircleDot, TrendingUp, MessageSquare, CalendarClock, Save
+  Clock3, CheckCircle2, CircleDot, TrendingUp, MessageSquare, CalendarClock, Save, Mail, Send, Phone, ExternalLink
 } from 'lucide-react';
 
 const DEFAULT_API_URL = import.meta.env.PROD
@@ -40,6 +40,7 @@ export default function App() {
   const [expandedId, setExpandedId] = useState('');
   const [noteDrafts, setNoteDrafts] = useState({});
   const [followUpDrafts, setFollowUpDrafts] = useState({});
+  const [emailDrafts, setEmailDrafts] = useState({});
 
   async function load() {
     setLoading(true);
@@ -92,6 +93,24 @@ export default function App() {
     try {
       const data = await request('/api/admin/enquiries/' + id, { method: 'PATCH', body: JSON.stringify(changes) });
       setItems(current => current.map(item => item._id === id ? data.enquiry : item));
+    } catch (err) { setError(err.message); }
+    finally { setSavingId(''); }
+  }
+
+  async function logInteraction(id, details) {
+    try {
+      const data = await request('/api/admin/enquiries/' + id + '/interactions', { method: 'POST', body: JSON.stringify(details) });
+      setItems(current => current.map(item => item._id === id ? data.enquiry : item));
+    } catch (err) { setError(err.message); }
+  }
+
+  async function sendCustomerEmail(id) {
+    const draft = emailDrafts[id] || {};
+    setSavingId(id); setError('');
+    try {
+      const data = await request('/api/admin/enquiries/' + id + '/email', { method: 'POST', body: JSON.stringify({ subject: draft.subject || '', message: draft.message || '' }) });
+      setItems(current => current.map(item => item._id === id ? data.enquiry : item));
+      setEmailDrafts(current => ({ ...current, [id]: { subject: '', message: '' } }));
     } catch (err) { setError(err.message); }
     finally { setSavingId(''); }
   }
